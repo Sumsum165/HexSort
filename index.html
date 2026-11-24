@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#0f172a" />
+  <title>Wabenzahl – Waben-Sortierrätsel</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="app" class="app-shell">
+    <!-- Kompakte Kopfzeile -->
+    <header class="top-bar">
+      <div class="brand-row">
+        <div class="brand-title-wrap">
+          <span class="brand-hex" aria-hidden="true">⬡</span>
+          <h1 class="brand-title">Wabenzahl</h1>
+        </div>
+
+        <div class="top-actions">
+          <button id="btn-undo" class="icon-btn" type="button" title="Rückgängig" aria-label="Letzten Zug rückgängig machen" disabled>
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M9 14L4 9l5-5" />
+              <path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5v0a5.5 5.5 0 0 1-5.5 5.5H11" />
+            </svg>
+          </button>
+          <button id="btn-sound" class="icon-btn" type="button" title="Ton an/aus" aria-label="Ton umschalten" aria-pressed="true">
+            <svg id="icon-sound-on" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+              <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+              <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
+            </svg>
+            <svg id="icon-sound-off" class="hidden" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+              <line x1="23" y1="9" x2="17" y2="15" />
+              <line x1="17" y1="9" x2="23" y2="15" />
+            </svg>
+          </button>
+          <button id="btn-help" class="icon-btn" type="button" title="Spielregeln" aria-label="Spielregeln anzeigen">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="10" />
+              <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+              <line x1="12" y1="17" x2="12.01" y2="17" />
+            </svg>
+          </button>
+          <button id="btn-restart" class="icon-btn" type="button" title="Neues Spiel" aria-label="Neues Spiel starten">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M3 12a9 9 0 1 0 3-6.7L3 8" />
+              <path d="M3 3v5h5" />
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Punktestand & Moduswechsel -->
+      <div class="hud-row">
+        <div class="stats-group">
+          <div class="stat-pill">
+            <span class="stat-label">Punkte</span>
+            <span id="score-value" class="stat-value">0</span>
+          </div>
+          <div class="stat-pill">
+            <span class="stat-label">Rekord</span>
+            <span id="best-value" class="stat-value">0</span>
+          </div>
+          <div class="stat-pill">
+            <span class="stat-label">Gelöst</span>
+            <span id="cleared-value" class="stat-value">0</span>
+          </div>
+        </div>
+
+        <div class="mode-switch" role="tablist" aria-label="Spielmodus">
+          <button id="mode-auto" class="mode-btn active" type="button" role="tab" aria-selected="true" data-mode="auto">
+            Automatisch
+          </button>
+          <button id="mode-manual" class="mode-btn" type="button" role="tab" aria-selected="false" data-mode="manual">
+            Selbst sortieren
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Wabenfeld -->
+    <main class="board-stage">
+      <div id="board-wrapper" class="board-wrapper">
+        <svg id="hex-board" class="hex-board" viewBox="0 -14 360 376" role="img" aria-label="Waben-Spielfeld">
+          <defs>
+            <filter id="glow-target" x="-25%" y="-25%" width="150%" height="150%">
+              <feGaussianBlur stdDeviation="3.5" result="blur" />
+              <feMerge>
+                <feMergeNode in="blur" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+            <filter id="tile-shadow" x="-15%" y="-15%" width="130%" height="145%">
+              <feDropShadow dx="0" dy="3" stdDeviation="2" flood-color="#020617" flood-opacity="0.45" />
+            </filter>
+          </defs>
+          <g id="board-slots"></g>
+          <g id="board-stacks"></g>
+          <g id="board-overlays"></g>
+        </svg>
+        <div id="floating-effects" class="floating-effects" aria-live="polite"></div>
+      </div>
+
+      <!-- Status & Zugrichtungs-Anzeige -->
+      <div class="status-strip">
+        <span id="direction-badge" class="direction-badge" title="Feste Zugrichtung im Modus Automatisch">
+          ↑ Zug nach oben-links
+        </span>
+        <span id="status-text" class="status-text">Stapel antippen oder auf eine freie Wabe ziehen</span>
+      </div>
+    </main>
+
+    <!-- Auswahl-Ablage für neue Stapel -->
+    <footer class="tray-dock" aria-label="Stapel zur Auswahl">
+      <div id="tray-slots" class="tray-slots"></div>
+    </footer>
+  </div>
+
+  <!-- Drag-Geist für Touch & Maus -->
+  <div id="drag-ghost" class="drag-ghost hidden" aria-hidden="true"></div>
+
+  <!-- Regeln-Dialog -->
+  <div id="modal-help" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="help-title">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2 id="help-title">So wird gespielt</h2>
+        <button id="btn-close-help" class="icon-btn" type="button" aria-label="Regeln schließen">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="rule-block">
+          <h3>1. Stapel erkennen</h3>
+          <p>Jede Zahl von <strong>1 bis 7</strong> hat eine eigene Farbe. Die Steine eines Stapels sind leicht versetzt gezeichnet, sodass du die nächste freiliegende Zahl direkt darunter ablesen kannst.</p>
+        </div>
+        <div class="rule-block">
+          <h3>2. Modus „Automatisch“</h3>
+          <p>Setze einen Stapel auf eine freie Wabe (durch Ziehen oder Antippen). Berühren sich oben gleiche Zahlen, wandern alle zusammenhängenden obersten Steine gemeinsam auf eine Wabe – bei Kettenreaktionen automatisch weiter.</p>
+          <p class="rule-highlight"><strong>Feste Zugrichtung (↑↖):</strong> Steine wandern immer zur am weitesten <strong>oben</strong> liegenden Wabe (bei gleicher Höhe weiter <strong>links</strong>). So springt nie etwas hin und her.</p>
+        </div>
+        <div class="rule-block">
+          <h3>3. Modus „Selbst sortieren“</h3>
+          <p>Tippe zuerst deinen <strong>Ausgangsstapel</strong> an und dann den passenden <strong>Nachbarstapel</strong> mit derselben Zahl oben. Du kannst auch jederzeit neue Stapel aus der Ablage auf freie Waben setzen.</p>
+        </div>
+        <div class="rule-block">
+          <h3>4. Auflösen ab 6 Steinen</h3>
+          <p>Liegen mindestens <strong>6 gleiche Steine</strong> oben zusammen auf einem Stapel, lösen sie sich auf und geben Punkte. Darunterliegende Steine bleiben erhalten!</p>
+        </div>
+        <div class="color-legend" id="color-legend"></div>
+      </div>
+      <div class="modal-footer">
+        <button id="btn-help-ok" class="primary-btn" type="button">Verstanden</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Spielende-Dialog -->
+  <div id="modal-gameover" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="gameover-title">
+    <div class="modal-card modal-card-compact">
+      <h2 id="gameover-title">Keine Züge mehr!</h2>
+      <p id="gameover-subtitle" class="modal-subtitle">Alle Waben sind belegt.</p>
+      <div class="gameover-stats">
+        <div class="go-stat">
+          <span class="go-label">Punkte</span>
+          <span id="go-score" class="go-val">0</span>
+        </div>
+        <div class="go-stat">
+          <span class="go-label">Rekord</span>
+          <span id="go-best" class="go-val">0</span>
+        </div>
+        <div class="go-stat">
+          <span class="go-label">Gelöste Steine</span>
+          <span id="go-cleared" class="go-val">0</span>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="btn-gameover-restart" class="primary-btn" type="button">Neues Spiel</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js" defer></script>
+</body>
+</html>
