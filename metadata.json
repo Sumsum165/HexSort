@@ -1,6 +1,0 @@
-{
-  "name": "Wabenzahl",
-  "description": "Eigenständiges, werbefreies Waben-Sortierrätsel mit Zahlen für Browser, Netlify und Android im Hochformat.",
-  "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
-}
